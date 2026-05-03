@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pylint.d/
+.venv/
+venv/
+env/
+.env
+app.db
+pylint.txt
