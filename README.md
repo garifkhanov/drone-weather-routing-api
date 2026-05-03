@@ -201,6 +201,13 @@ npm install
 npm run dev
 ```
 
+Также frontend можно запускать из корня проекта:
+
+```powershell
+npm install
+npm run dev
+```
+
 Если PowerShell после установки Node.js ещё не видит команду `npm`, можно запустить helper-скрипт:
 
 ```powershell
@@ -212,6 +219,12 @@ powershell -ExecutionPolicy Bypass -File .\start-dev.ps1
 
 ```text
 http://localhost:5173
+```
+
+Если браузер не открыл `localhost`, используйте прямой адрес:
+
+```text
+http://127.0.0.1:5173
 ```
 
 Как пользоваться веб-интерфейсом:

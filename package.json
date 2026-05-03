@@ -1,0 +1,12 @@
+{
+  "name": "drone-weather-routing-api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "npm --prefix frontend install",
+    "dev": "npm --prefix frontend run dev",
+    "prebuild": "npm --prefix frontend install",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview"
+  }
+}
