@@ -5,6 +5,7 @@ from app.models import (
     RouteRequest,
     RouteResult,
     RouteWaypoint,
+    SavedPoint,
     User,
     WeatherPoint,
 )
@@ -17,6 +18,7 @@ REGISTERED_MODELS = (
     WeatherPoint,
     RouteResult,
     RouteWaypoint,
+    SavedPoint,
 )
 
 

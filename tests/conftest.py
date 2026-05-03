@@ -10,7 +10,12 @@ from sqlalchemy.pool import StaticPool
 from app.api.deps import get_db, get_weather_client
 from app.db.base import Base
 from app.main import app
-from app.services.weather_client import Coordinate, WeatherData, WeatherClientError
+from app.services.weather_client import (
+    Coordinate,
+    WeatherData,
+    WeatherClientError,
+    WeatherPointData,
+)
 
 
 class FakeWeatherClient:
@@ -45,6 +50,29 @@ class FakeWeatherClient:
             for point in points
         ]
 
+    def get_weather_for_point(
+        self,
+        lat: float,
+        lon: float,
+        forecast_time: datetime | None = None,
+    ) -> WeatherPointData:
+        normalized_time = forecast_time or datetime(2026, 5, 3, 10, tzinfo=timezone.utc)
+        if normalized_time.tzinfo is None:
+            normalized_time = normalized_time.replace(tzinfo=timezone.utc)
+
+        return WeatherPointData(
+            lat=lat,
+            lon=lon,
+            forecast_time=normalized_time,
+            temperature_c=12.4,
+            relative_humidity_percent=75,
+            wind_speed_ms=self.wind_speed_ms,
+            wind_gust_ms=self.wind_gust_ms,
+            precipitation_mm=self.precipitation_mm,
+            cloud_cover_percent=64,
+            weather_code=3,
+        )
+
 
 class FailingWeatherClient:
     def get_hourly_weather_for_points(
@@ -52,6 +80,14 @@ class FailingWeatherClient:
         points: list[Coordinate],
         forecast_time: datetime,
     ) -> list[WeatherData]:
+        raise WeatherClientError("Weather API unavailable")
+
+    def get_weather_for_point(
+        self,
+        lat: float,
+        lon: float,
+        forecast_time: datetime | None = None,
+    ) -> WeatherPointData:
         raise WeatherClientError("Weather API unavailable")
 
 

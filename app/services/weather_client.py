@@ -21,6 +21,20 @@ class WeatherData:
     weather_code: int | None
 
 
+@dataclass(frozen=True)
+class WeatherPointData:
+    lat: float
+    lon: float
+    forecast_time: datetime
+    temperature_c: float | None
+    relative_humidity_percent: float | None
+    wind_speed_ms: float
+    wind_gust_ms: float
+    precipitation_mm: float
+    cloud_cover_percent: float | None
+    weather_code: int | None
+
+
 class WeatherClientError(RuntimeError):
     pass
 
@@ -45,17 +59,39 @@ class WeatherClient:
         point: Coordinate,
         forecast_time: datetime,
     ) -> WeatherData:
+        point_weather = self.get_weather_for_point(
+            point.lat,
+            point.lon,
+            forecast_time,
+        )
+
+        return WeatherData(
+            coordinate=point,
+            forecast_time=point_weather.forecast_time,
+            wind_speed_ms=point_weather.wind_speed_ms,
+            wind_gust_ms=point_weather.wind_gust_ms,
+            precipitation_mm=point_weather.precipitation_mm,
+            weather_code=point_weather.weather_code,
+        )
+
+    def get_weather_for_point(
+        self,
+        lat: float,
+        lon: float,
+        forecast_time: datetime | None = None,
+    ) -> WeatherPointData:
+        target_time = forecast_time or datetime.now(timezone.utc)
         params = {
-            "latitude": point.lat,
-            "longitude": point.lon,
+            "latitude": lat,
+            "longitude": lon,
             "hourly": (
-                "wind_speed_10m,wind_gusts_10m,"
-                "precipitation,weather_code"
+                "temperature_2m,relative_humidity_2m,precipitation,"
+                "cloud_cover,wind_speed_10m,wind_gusts_10m,weather_code"
             ),
             "wind_speed_unit": "ms",
             "timezone": "UTC",
-            "start_date": forecast_time.date().isoformat(),
-            "end_date": forecast_time.date().isoformat(),
+            "start_date": target_time.date().isoformat(),
+            "end_date": target_time.date().isoformat(),
         }
 
         try:
@@ -63,27 +99,36 @@ class WeatherClient:
                 response = client.get(self.base_url, params=params)
                 response.raise_for_status()
                 payload = response.json()
-            return self._parse_weather_response(point, payload, forecast_time)
+            return self._parse_weather_point_response(lat, lon, payload, target_time)
         except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
             raise WeatherClientError("Open-Meteo weather request failed") from exc
 
-    def _parse_weather_response(
+    def _parse_weather_point_response(
         self,
-        point: Coordinate,
+        lat: float,
+        lon: float,
         payload: dict[str, Any],
         forecast_time: datetime,
-    ) -> WeatherData:
+    ) -> WeatherPointData:
         hourly = payload["hourly"]
         times = hourly["time"]
         nearest_index = self._find_nearest_hour_index(times, forecast_time)
         weather_code = hourly["weather_code"][nearest_index]
 
-        return WeatherData(
-            coordinate=point,
+        return WeatherPointData(
+            lat=lat,
+            lon=lon,
             forecast_time=self._parse_open_meteo_time(times[nearest_index]),
+            temperature_c=self._optional_float(hourly["temperature_2m"][nearest_index]),
+            relative_humidity_percent=self._optional_float(
+                hourly["relative_humidity_2m"][nearest_index],
+            ),
             wind_speed_ms=float(hourly["wind_speed_10m"][nearest_index]),
             wind_gust_ms=float(hourly["wind_gusts_10m"][nearest_index]),
             precipitation_mm=float(hourly["precipitation"][nearest_index]),
+            cloud_cover_percent=self._optional_float(
+                hourly["cloud_cover"][nearest_index],
+            ),
             weather_code=None if weather_code is None else int(weather_code),
         )
 
@@ -115,3 +160,9 @@ class WeatherClient:
         if value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)
         return value.astimezone(timezone.utc)
+
+    @staticmethod
+    def _optional_float(value: Any) -> float | None:
+        if value is None:
+            return None
+        return float(value)

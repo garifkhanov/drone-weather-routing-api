@@ -11,6 +11,7 @@ from app.db.base import Base, utc_now
 if TYPE_CHECKING:
     from app.models.drone import Drone
     from app.models.route_request import RouteRequest
+    from app.models.saved_point import SavedPoint
 
 
 class User(Base):
@@ -36,6 +37,10 @@ class User(Base):
         cascade="all, delete-orphan",
     )
     route_requests: Mapped[list["RouteRequest"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    saved_points: Mapped[list["SavedPoint"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
